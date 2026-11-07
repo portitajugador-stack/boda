@@ -1,148 +1,28 @@
-
-const book = document.getElementById("book");
-
-const doors = document.getElementById("doors");
-
-const openBtn = document.getElementById("openBtn");
-
-const backBtn = document.getElementById("backBtn");
-
-const prev = document.getElementById("prev");
-
-const next = document.getElementById("next");
-
-const pageNumber = document.getElementById("pageNumber");
-
-
-/* CAMBIAR DE PÁGINA */
-
-function showPage(page) {
-
-  const details = page === 2;
-
-  book.classList.toggle(
-    "show-details",
-    details
-  );
-
-  pageNumber.textContent = details
-    ? "2 / 2"
-    : "1 / 2";
-
-  prev.disabled = !details;
-
-  next.disabled = details;
-
+// CONFIGURACIÓN: cuando confirmen el año, reemplaza null por el año (ej. 2027).
+// La hora es 17:00 de Colombia (UTC-5).
+const ANIO_BODA = null;
+const countdownMessage = document.getElementById('countdown-message');
+function actualizarCuentaRegresiva(){
+  if(!ANIO_BODA){countdownMessage.textContent='El contador se activará cuando configures el año de la boda en script.js.';return;}
+  const fecha = new Date(`${ANIO_BODA}-11-14T17:00:00-05:00`);
+  const diferencia=fecha.getTime()-Date.now();
+  if(diferencia<=0){countdownMessage.textContent='¡Llegó nuestro gran día!';['days','hours','minutes','seconds'].forEach(id=>document.getElementById(id).textContent='00');return;}
+  const partes=[Math.floor(diferencia/86400000),Math.floor(diferencia/3600000)%24,Math.floor(diferencia/60000)%60,Math.floor(diferencia/1000)%60];
+  ['days','hours','minutes','seconds'].forEach((id,i)=>document.getElementById(id).textContent=String(partes[i]).padStart(2,'0'));
+  countdownMessage.textContent='¡Te esperamos!';
 }
-
-
-/* ABRIR LAS PUERTAS */
-
-function openInvitation() {
-
-  doors.classList.add("open");
-
-  window.setTimeout(() => {
-
-    doors.classList.add("hidden");
-
-    showPage(2);
-
-  }, 1150);
-
-}
-
-
-/* BOTÓN ABRIR */
-
-openBtn.addEventListener(
-  "click",
-  openInvitation
-);
-
-
-/* REGRESAR A LA PORTADA */
-
-backBtn.addEventListener(
-  "click",
-  () => showPage(1)
-);
-
-
-/* SIGUIENTE PÁGINA */
-
-next.addEventListener(
-  "click",
-  () => {
-
-    if (!doors.classList.contains("hidden")) {
-
-      openInvitation();
-
-    } else {
-
-      showPage(2);
-
-    }
-
-  }
-);
-
-
-/* PÁGINA ANTERIOR */
-
-prev.addEventListener(
-  "click",
-  () => showPage(1)
-);
-
-
-/* DESLIZAMIENTO HORIZONTAL EN CELULAR */
-
-let startX = 0;
-
-book.addEventListener(
-  "touchstart",
-  event => {
-
-    startX = event.changedTouches[0].clientX;
-
-  },
-  { passive: true }
-);
-
-
-book.addEventListener(
-  "touchend",
-  event => {
-
-    const delta =
-      event.changedTouches[0].clientX - startX;
-
-    if (Math.abs(delta) > 55) {
-
-      if (
-        delta < 0 &&
-        !book.classList.contains("show-details")
-      ) {
-
-        openInvitation();
-
-      }
-
-      if (delta > 0) {
-
-        showPage(1);
-
-      }
-
-    }
-
-  },
-  { passive: true }
-);
-
-
-/* INICIAR EN LA PORTADA */
-
-showPage(1);
+actualizarCuentaRegresiva();setInterval(actualizarCuentaRegresiva,1000);
+// Este formulario NO almacena ni envía información a los novios.
+// Genera un texto para compartir mediante las opciones nativas del dispositivo o copiar.
+document.getElementById('rsvp-form').addEventListener('submit',async e=>{
+  e.preventDefault();const datos=new FormData(e.currentTarget);
+  const nombre=String(datos.get('nombre')||'').trim();const asistencia=String(datos.get('asistencia')||'');const invitados=String(datos.get('invitados')||'');const mensaje=String(datos.get('mensaje')||'').trim();
+  if(!nombre||!asistencia||!invitados)return;
+  const texto=`Confirmación de boda - María y José\nNombre: ${nombre}\nAsistencia: ${asistencia}\nNúmero de asistentes: ${invitados}\nMensaje: ${mensaje||'Sin mensaje'}`;
+  const feedback=document.getElementById('form-feedback');
+  try{
+    if(navigator.share){await navigator.share({title:'Confirmación de asistencia',text:texto});feedback.textContent='Confirmación preparada. Recuerda enviarla a los novios.';}
+    else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(texto);feedback.textContent='¡Texto copiado! Envíalo a los novios por WhatsApp u otro medio.';}
+    else{feedback.textContent=texto+' — Copia este mensaje y envíalo a los novios.';}
+  }catch(error){if(error.name!=='AbortError')feedback.textContent=texto;}
+});
